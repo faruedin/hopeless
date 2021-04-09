@@ -1,0 +1,231 @@
+<html>
+    <head>
+        <!-- put in jquery library first! -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+        
+        <style>
+            
+            body{
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                margin: 0;
+            }
+        
+            #mycanvas{
+                background-color: black;
+            }
+        </style>
+        
+    
+        
+        <!-- put in our javascript code-->
+        <script>
+        
+            //background
+             function degToRad(deg){
+                return deg * Math.PI / 180;
+            }
+            
+            
+            //global vars
+            let cn;
+            let ctx;
+            
+            //make an angle
+            let angle = 0;
+            let radius = 5;
+            
+            //all points in the white line
+            let allpoints = [];
+            
+            //array for all blobs
+            let allblobs = [];
+            
+            //keep track of frame
+            let framecount = 0;
+            
+            
+            $(document).ready(function(){
+               //all our code goes in here 
+                cn = document.getElementById('mycanvas');
+                
+                //init something called the context
+                ctx = cn.getContext('2d');
+                
+                //set the canvas width and height
+                cn.width = window.innerWidth;
+                cn.height = window.innerHeight;
+                
+                
+                //call first function
+                setInterval( animate, 50);
+                
+                //start the white line array
+                allpoints[0] = {x: 750, y: cn.height/2};
+                
+                //make a bunch of blobs
+                for(let i = 0; i < 150; i++){
+                    allblobs.push(new Blob(true));
+                }
+                for(let i = 0; i < 150; i++){
+                    allblobs.push(new Blob(false));
+                }
+                
+                
+            });
+            
+            
+            
+            //all animation frames get drawn here
+            function animate(){
+                framecount ++;
+                ctx.clearRect(0,0,cn.width, cn.height);
+                
+                //go and get a new point into the white line array
+                makeNewPoint(50,100);
+                //and draw the entire white line
+                drawWhiteLine();
+                
+                //drawing all blobs
+                for(let i = 0; i < allblobs.length; i++){
+                    allblobs[i].drawMe();
+                    allblobs[i].moveMe();
+                }
+                
+                //once ever couple of seconds
+                if(framecount%120==0){
+                    //pull
+                    for(let i = 0; i < allblobs.length; i++){
+                        allblobs[i].pullMe();
+                    }
+                }
+                
+                
+            }
+            
+            function makeNewPoint() {
+                radius += .07;
+                let tempX = allpoints[allpoints.length-1].x + radius * Math.sin(angle * Math.cos(allpoints[allpoints.length-1].y * radius + Math.sin(radius)));
+                let tempY = allpoints[allpoints.length-1].y + radius * Math.cos(angle + Math.sin( allpoints[allpoints.length-1].x * radius * getRandom(10,200)));
+                if(tempX > cn.width){
+                    tempX = cn.width;
+                } else if (tempX < 0){
+                    tempX =0;
+                }
+                
+                if(tempY > cn.height){
+                    tempY = cn.height;
+                } else if (tempY < 0){
+                    tempY = 0;
+                }
+                
+                allpoints.push( {x: tempX, y: tempY}  );
+                
+                //if too many points, remove the old ones
+                if( allpoints.length > 150){
+                    allpoints.shift();
+                }
+                
+                
+                angle += .2;
+            }
+            
+            function drawWhiteLine() {
+                for(let i= 1; i < allpoints.length; i ++){
+                    ctx.globalCompositeOperation = 'source-over';
+                    ctx.beginPath();
+                    ctx.moveTo(allpoints[i-1].x, allpoints[i-1].y);
+                    ctx.lineTo(allpoints[i].x, allpoints[i].y);
+                    ctx.strokeStyle = 'white';
+                    ctx.stroke();
+                }
+            }
+            
+            function Blob( isRight ) {
+                let rad = getRandom(20,50);
+                let expectedRad = rad;
+                let a = getRandom(.01,.2);
+                let c = 'rgba(60, 30, '+ getRandom(205,255);
+                
+                let loc = {x: null, y:getRandom(0, cn.height)};
+                //pick your x location based on if your are right or left
+                if(isRight) {
+                    loc.x = cn.width + rad;
+                }else {
+                    loc.x = -rad;
+                }
+                
+                let spring = getRandom(.004,.5);
+                
+                let newLoc = {x:loc.x, y:loc.y};
+                
+                this.velocity = {x:0, y:0};
+                
+                this.drawMe = function () {
+                    ctx.globalCompositeOperation = 'lighter';
+                    ctx.beginPath();
+                    ctx.arc(loc.x, loc.y, rad, 0, Math.PI*2);
+                    ctx.fillStyle = c + ','+ a +')';
+                    ctx.fill();
+                    
+                };
+                
+                this.pullMe = function() {
+                    
+                    //first, how far am i from middle?
+                    let d = cn.width/2 - loc.x;
+                    
+                    //make me bigger
+                    expectedRad+= getRandom(2,10);
+                    //increase opacity
+                    a+=.1;
+                    
+                    d *= spring;
+                    
+                    //new location is my distance from where i am
+                    newLoc.x = loc.x + d;
+                    
+                }
+                
+                this.moveMe = function () {
+                    
+                    if(rad < expectedRad){
+                        rad+=.3;
+                    }
+                    
+                    this.velocity.x = (newLoc.x - loc.x ) / 100;
+                    
+                    loc.x += this.velocity.x;
+                }
+                
+            }
+            
+        
+            //always keep
+            function degToRad (deg) {
+                var radians = (deg * Math.PI / 200);
+                return radians;
+            }
+            
+            function getRandom(min, max){
+                return Math.random() * (max - min) + min;
+            }
+            
+            function getRandomInt(min,max){
+                return Math.floor(Math.random()* (max-min+4)) + min;
+            }
+        
+        </script>
+
+    
+    </head>
+    
+    <body>
+    
+        <canvas id="mycanvas"></canvas>
+    
+    </body>
+
+
+</html>
